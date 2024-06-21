@@ -19,14 +19,21 @@ func main() {
 	}
 
 	defer rabbitConn.Close()
-	log.Println("🚀 Connected to RabbitMQ!")
 
 	// start listening for messages
+	log.Println("Listening and consuming RabbitMQ messages...")
 
 	// create consumer
+	consumer, err := event.NewConsumer(rabbitConn)
+	if err != nil {
+		panic(err)
+	}
 
 	// watch the queue and consume events
-
+	err = consumer.Listen([]string{"log.WARNING", "log.INFO", "log.ERROR"})
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func connect() (*amqp.Connection, error) {
@@ -34,7 +41,7 @@ func connect() (*amqp.Connection, error) {
 	var backOff = 1 * time.Second
 	var connection *amqp.Connection
 
-	// don't connect util rabbit is ready
+	// don't continue util rabbit is ready
 
 	for {
 		c, err := amqp.Dial("amqp://guest:guest@localhost")
@@ -42,6 +49,7 @@ func connect() (*amqp.Connection, error) {
 			fmt.Println("RabbitMQ not yet ready...")
 			counts++
 		} else {
+			log.Println("🚀 Connected to RabbitMQ!")
 			connection = c
 			break
 		}
