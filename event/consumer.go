@@ -1,4 +1,4 @@
-package main
+package event
 
 import (
 	"bytes"
@@ -19,6 +19,7 @@ func NewConsumer(conn *amqp.Connection) (Consumer, error) {
 	consumer := Consumer{
 		conn: conn,
 	}
+
 	err := consumer.setup()
 	if err != nil {
 		return Consumer{}, err
@@ -82,7 +83,7 @@ func (consumer *Consumer) Listen(topics []string) error {
 		}
 	}()
 
-	fmt.Printf("Waiting for message [Exchage, Queue] [logs_topic, %s]\n", q.Name)
+	fmt.Printf("Waiting for message [Exchange, Queue] [logs_topic, %s]\n", q.Name)
 	<-forever
 
 	return nil
@@ -96,8 +97,11 @@ func handlePayload(payload Payload) {
 		if err != nil {
 			log.Println(err)
 		}
+
 	case "auth":
-		//authenticate
+		// authenticate
+
+	// you can have as many cases as you want, as long as you write the logic
 
 	default:
 		err := logEvent(payload)
@@ -109,6 +113,7 @@ func handlePayload(payload Payload) {
 
 func logEvent(entry Payload) error {
 	jsonData, _ := json.MarshalIndent(entry, "", "\t")
+
 	logServiceURL := "http://logger-service/log"
 
 	request, err := http.NewRequest("POST", logServiceURL, bytes.NewBuffer(jsonData))
@@ -119,12 +124,13 @@ func logEvent(entry Payload) error {
 	request.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
+
 	response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
-
 	defer response.Body.Close()
+
 	if response.StatusCode != http.StatusAccepted {
 		return err
 	}
